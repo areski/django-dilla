@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import get_app,get_models
 from django.conf import settings
 
-__author__="""Adam Rutkowski <adam@HELLOSPAMBOT.mtod.org>"""
+__author__="""Adam Rutkowski <adam@HELLOSPAMBOT.mtod.org> and Aaron Smith <aaron@rubyamf.org>"""
 __doc__="""Dilla for Django is a command extension tool that populates your database with randomized data.
 For further information visit Dilla home at http://code.google.com/p/django-dilla
 """
