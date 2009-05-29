@@ -455,7 +455,7 @@ class Command(BaseCommand):
 		if field_extras:
 			generator=field_extras.get("generator",None)
 			if callable(generator):
-				if field_extras.get("generate_wants_extras",None):val=generator(field_extras)
+				if field_extras.get("generator_wants_extras",None):val=generator(field_extras)
 				else: val=generator()
 			elif isinstance(generator,str):
 				if hasattr(self,generator):
