@@ -1,3 +1,5 @@
 .DS_S*
 __MAC*
 *.pyc
+.project
+.pydevproject

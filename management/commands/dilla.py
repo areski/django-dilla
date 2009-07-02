@@ -4,12 +4,13 @@ from django.core.exceptions import ValidationError
 from optparse import make_option
 from django.contrib.webdesign.lorem_ipsum import words,paragraphs
 from django.core.management.base import BaseCommand
-from django.db.models import get_app,get_models
+from django.db.models import get_app,get_models,URLField
 from django.conf import settings
+import MySQLdb
 
 #authors:
-#Adam Rutkowski <adam@HELLOSPAMBOT.mtod.org>
-#Aaron Smith <aaron@rubyamf.org>
+#adam rutkowski <adam@mtod.org>
+#aaron smith <aaron@rubyamf.org>
 
 """
 EXAMPLE
@@ -33,21 +34,22 @@ class Event(models.Model):
 		skip_model=False
 		generate_images=False
 		image_fields=None
-		image_resolution="1024x768" #if images, this resolution
-		image_resolutions=('300x340','200x190','100x10','200x90') #if images, use a random resolution from this tuple
+		resolution="1024x768" #if images, this resolution
+		resolutions=('300x340','200x190','100x10','200x90') #if images, use a random resolution from this tuple
 		field_extras={ #field extras are for defining custom dilla behavior per field
 			'fieldname':{
 				'generator':None, #can point to a callable, which must return the desired value. If this is a string, it looks for a method in the dilla.py file.
 				'generator_wants_extras':False, #whether or not to pass this "field extra" hash item to the callable
 				'random_values':("word","yes","no","1"), #choose a random value from this tuple
-				'image_size':'1024x768', #if images, use this image size for this field
-				'image_sizes':('300x340','200x190','100x10','200x90'), #if images, use a random size from this tuple
+				'resolution':'1024x768', #if images, use this image size for this field
+				'resolutions':('300x340','200x190','100x10','200x90'), #if images, use a random size from this tuple
 				'max':10, #for many to many fields, the maximum associated objects will be 10, so it will take a range like: Model.objects.all().order_by("?")[0:random.randrange(0,max)]
 				'spaces':False, #if Char/TextField, whether or not to allow spaces
 				'word_count':1, #if Char/TextField, the number of words to generate
 				'word_range':(3,7), #a range of words to generate (3-7 words)
 				'paragraph_count:1, #if TextField, the number of paragraphs to generate
 				'paragraph_range':(3,5), #a range of paragraphs to generate (3 - 5 paragraphs)
+				'integer_range':(0,2), #a range for any integer type field (IntegerField,SmallIntegerField,PositiveInteger,PositiveSmallInteger)
 				#TODO:'digits_only':True, #if Char/TextField, but want numbers only
 				#TODO:'digit_range:(30,400), #a range for digit only creation (default range is (0,9999))
 				#TODO:'digit_ranges':((0,20),(30,300)), #chooses random range from this tuple.
@@ -59,15 +61,14 @@ class Event(models.Model):
 """
 
 image_support=False
-try:#pil dependency checking
+try:
 	import Image,ImageDraw,ImageFont
-	ROOT=os.path.split(__file__)[0]
+	ROOT=os.path.split(__file__)[0]+"/../"
 	FAKE_UPLOAD_RELATIVE="dilla-fakes/"
 	FAKE_UPLOAD_PATH="%s%s"%(settings.MEDIA_ROOT,FAKE_UPLOAD_RELATIVE)
 	#armn(Apple Roman),ADBE(Adobe Expert),ADOB(Adobe Standard),symb(Microsoft Symbol),unic(Unicode),armn(TTF_ENCODING)
 	TTF_ENCODING=getattr(settings,'TTF_ENCODING','armn')
 	if not os.path.exists(FAKE_UPLOAD_PATH):os.makedirs(FAKE_UPLOAD_PATH)
-	#all the fonts downloaded from dafont.com and licensed `FREE`)
 	fonts=['Besmellah_1.ttf','skullz.ttf','bonohadavision.ttf','openlogos.ttf', 'invaders.from.space.[fontvir.us].ttf','anim____.ttf']
 	image_support=True
 except ImportError, e:
@@ -159,11 +160,17 @@ class Command(BaseCommand):
 							self.fill(field=field,obj=instance,dilla=dilla)
 						elif field.blank:
 							self._decide(self.fill,field=field,obj=instance,dilla=dilla)
-				instance.save()
+				try:
+					instance.save()
+					#if field has unique, this error will be thrown, in the case of dilla, we don't care
+				except MySQLdb.IntegrityError:
+					instance=None
+					continue
 				instances_by_model[model].append(instance)
 		for model in models: #go back through each model, and alter each instance's many to many fields
 			if len(model._meta.many_to_many) <= 0: continue
 			instances_list=instances_by_model[model]
+			dilla=getattr(model,'Dilla',False)
 			self.many_to_manys(model,instances_list,dilla)
 
 	def _get_field_option(self,field_extras,option_name,default):
@@ -250,6 +257,57 @@ class Command(BaseCommand):
 				setattr(instance,name,relobjs)
 				instance.save
 	
+	def generate_PositiveIntegerField(self,**kwargs):
+		"""
+		Generates a PositiveIntegerField value.
+		Supported field extras:
+		field_extras={
+			'myfield':{
+				'integer_range':(0,10) #specify the integer range to generate
+			}
+		}
+		"""
+		field_extras=kwargs.get("field_extras",False)
+		ranj=self._get_field_option(field_extras,"integer_range",(0,32))
+		if len(ranj)<2:ranj=(0,32)
+		if ranj[0]<0 or ranj[1]<0:
+			print "PositiveInteger ranges cannot be less than zero, defaulting to range(0,32)"
+			ranj=(0,32)
+		return random.randint(ranj[0],ranj[1])
+	
+	def generate_PositiveSmallIntegerField(self,**kwargs):
+		"""
+		Generates a PositiveSmallIntegerField value.
+		Supported field extras:
+		field_extras={
+			'myfield':{
+				'integer_range':(0,10) #specify the integer range to generate
+			}
+		}
+		"""
+		field_extras=kwargs.get("field_extras",False)
+		ranj=self._get_field_option(field_extras,"integer_range",(0,32))
+		if len(ranj)<2:ranj=(0,32)
+		if ranj[0]<0 or ranj[1]<0:
+			print "PositiveSmallInteger ranges cannot be less than zero, defaulting to range(0,32)"
+			ranj=(0,32)
+		return random.randint(ranj[0],ranj[1])
+	
+	def generate_SmallIntegerField(self,**kwargs):
+		"""
+		Generates a SmallIntegerField value.
+		Supported field extras:
+		field_extras={
+			'myfield':{
+				'integer_range':(0,10) #specify the integer range to generate
+			}
+		}
+		"""
+		field_extras=kwargs.get("field_extras",False)
+		ranj=self._get_field_option(field_extras,"integer_range",(0,32))
+		if len(ranj)<2:ranj=(0,32)
+		return random.randint(ranj[0],ranj[1])
+	
 	def generate_URLField(self,**kwargs):
 		"""
 		Returns a random URL for URLFields. By default there's only a few urls,
@@ -298,6 +356,7 @@ class Command(BaseCommand):
 		if max_length and length > max_length: result=result[length-max_length:] #chop off too many chars for max length
 		if not self._get_field_option(field_extras,"spaces",True) and word_count == -1 and word_range == -1:
 			result=result.replace(" ","")
+		result=re.sub(r' $','',result)
 		return result
 	
 	def generate_TextField(self,**kwargs):
@@ -322,6 +381,7 @@ class Command(BaseCommand):
 		else:
 			result="\n".join(paragraphs(random.randint(1,3)))
 		if not self._get_field_option(field_extras,'spaces',True): result=result.resplace(" ","")
+		result=re.sub(r' $','',result)
 		return result
 	
 	def generate_DecimalField(self,**kwargs):
@@ -413,14 +473,12 @@ class Command(BaseCommand):
 		text=[random.choice(string.letters) for i in range(2)]
 		draw.rectangle([(0,0),tuple(size)],fill=_gen_rgb())
 		for i in range(2):
-			fontfile = random.choice(fonts)
-			font = ImageFont.truetype("%s/fonts/%s" % (ROOT, fontfile), size[0], encoding=TTF_ENCODING)                                         
+			fontfile=random.choice(fonts)
+			font=ImageFont.truetype("%s/fonts/%s" %(ROOT,fontfile), size[0],encoding=TTF_ENCODING)
 			draw.text(text_pos, text[i],fill=_gen_rgb(),font=font)
-			del font
 		filename="%s.png" % self.generate_SlugField(unique=True)
 		im.save("%s%s"%(FAKE_UPLOAD_PATH,filename),'PNG')
-		del draw,im
-		return "%s%s"%(FAKE_UPLOAD_RELATIVE,filename)
+		return filename
 	
 	def fill(self,field,obj,dilla=None):
 		"""
@@ -441,14 +499,14 @@ class Command(BaseCommand):
 			image_fields=getattr(dilla,'image_fields',None)
 			generate_images=getattr(dilla,'generate_images',False)
 			if image_fields and generate_images and field.name in image_fields:
-				resolution=getattr(obj.Dilla,'image_resolution','640x480')
-				resolutions=getattr(obj.Dilla,'image_resolutions',None)
+				resolution=getattr(obj.Dilla,'resolution','640x480')
+				resolutions=getattr(obj.Dilla,'resolutions',None)
 				if resolutions:
-					resolution=obj.Dilla.image_resolutions[random.randrange(0,len(obj.Dilla.image_resolutions))]
+					resolution=obj.Dilla.resolutions[random.randrange(0,len(obj.Dilla.resolutions))]
 				if field_extras:
-					resolution=field_extras.get("image_size","800x600")
-					if field_extras.get("image_sizes",None):
-						sizes=field_extras.get("image_sizes",None)
+					resolution=field_extras.get("resolution","800x600")
+					if field_extras.get("resolutions",None):
+						sizes=field_extras.get("resolutions",None)
 						if sizes: resolution=sizes[random.randrange(0,len(sizes))]
 					else: resolution="800x600"
 				if(image_support):val=self._generate_image(resolution)
@@ -463,7 +521,9 @@ class Command(BaseCommand):
 					val=method()
 		if not val:
 			internal_type=field.get_internal_type()
-			if hasattr(self,"generate_%s"%internal_type):
+			if isinstance(field,URLField):
+				val=self.generate_URLField(field=field,unique=field.unique,max_length=field.max_length,field_extras=field_extras)
+			elif hasattr(self,"generate_%s"%internal_type):
 				generate_method=getattr(self,"generate_%s"%internal_type)
 				val=generate_method(field=field,unique=field.unique,max_length=field.max_length,field_extras=field_extras)
 		setattr(obj,field.name,val)
