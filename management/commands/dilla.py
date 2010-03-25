@@ -10,7 +10,7 @@ import MySQLdb
 
 #authors:
 #adam rutkowski <adam@mtod.org>
-#aaron smith <aaron@rubyamf.org>
+#aaron smith <aaron@macendeavor.com>
 
 """
 EXAMPLE
@@ -81,7 +81,7 @@ Type 'yes' to confirm.
 
 class Command(BaseCommand):
 	"""
-	Dilla is a command that populates your database with randomized data. (http://code.google.com/p/django-dilla)
+	Dilla is a command that populates your database with randomized data. (http://gitweb.codeendeavor.com/?p=dilla.git;a=summary)
 
 	Examples:
 	1. Generate data for all models in an app
