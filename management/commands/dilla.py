@@ -6,7 +6,16 @@ from django.contrib.webdesign.lorem_ipsum import words,paragraphs
 from django.core.management.base import BaseCommand
 from django.db.models import get_app,get_models,URLField
 from django.conf import settings
-import MySQLdb
+
+if settings.DATABASE_ENGINE == 'postgresql_psycopg2':
+	import psycopg2
+	IntegrityError = psycopg2.IntegrityError
+elif settings.DATABASE_ENGINE == 'postgresql_psycopg2':
+	import MySQLdb
+	IntegrityError = MySQLdb.IntegrityError
+else:
+	# XXX: BAD
+	IntegrityError = Exception
 
 #authors:
 #adam rutkowski <adam@mtod.org>
@@ -163,7 +172,7 @@ class Command(BaseCommand):
 				try:
 					instance.save()
 					#if field has unique, this error will be thrown, in the case of dilla, we don't care
-				except MySQLdb.IntegrityError:
+				except IntegrityError:
 					instance=None
 					continue
 				instances_by_model[model].append(instance)
