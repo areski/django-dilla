@@ -64,6 +64,8 @@ class Event(models.Model):
         'paragraph_range':(3,5), #a range of paragraphs to generate (3 - 5 paragraphs)
         'integer_range':(0,2), #a range for any integer type field 
         (IntegerField,SmallIntegerField,PositiveInteger,PositiveSmallInteger)
+        'day_delta': 5, #The day delta to generate the date, minus today
+		'hour_delta': 24, #The day delta to generate the date, minus the current hour
         #TODO:'digits_only':True, #if Char/TextField, but want numbers only
         #TODO:'digit_range:(30,400), #a range for digit only creation (default range is (0,9999))
         #TODO:'digit_ranges':((0,20),(30,300)), #chooses random range from this tuple.
@@ -72,3 +74,5 @@ class Event(models.Model):
       },
       'anotherfieldname':{...}
     }
+    
+    

@@ -11,6 +11,7 @@ from django.conf import settings
 #authors:
 #adam rutkowski <adam@mtod.org>
 #aaron smith <aaron@macendeavor.com>
+#areski belaid <arski@gmail.com>
 
 """
 EXAMPLE
@@ -403,11 +404,31 @@ class Command(BaseCommand):
         today=datetime.datetime.now()
         return datetime.time(today.hour,today.minute,today.second)
     
-    def generate_DateTimeField(self,**kwargs):
-        """
-        Generates datetime for DateTimeField's
-        """
-        return datetime.datetime.now()  
+	def generate_DateTimeField(self,**kwargs):
+		"""
+		Generates datetime for DateTimeField's
+		Supported field extras:
+		field_extras={
+			'myfield':{
+				'day_delta': 5, #The day delta to generate the date, minus today
+				'hour_delta': 24, #The day delta to generate the date, minus the current hour
+			}
+		}
+		"""
+		field_extras=kwargs.get("field_extras",False)
+		day_delta_setting = self._get_field_option(field_extras,'day_delta', 0)
+		hour_delta_setting = self._get_field_option(field_extras,'hour_delta', 0)
+		
+		#return datetime.datetime.now()
+		day_delta = random.randint(0, day_delta_setting)
+		hour_delta = random.randint(1, hour_delta_setting)
+		
+		today = datetime.datetime.today()
+		one_day = datetime.timedelta(days=1)
+		one_hour = datetime.timedelta(hours=1)
+		pastdate = today - hour_delta * one_hour - day_delta * one_day
+        		
+		return pastdate
     
     def generate_DateField(self,**kwargs):
         """
@@ -443,15 +464,15 @@ class Command(BaseCommand):
         """
         return bool(random.randint(0,1))
     
-    def generate_EmailField(self,**kwargs):
-        """
-        Generates a random lipsum email address.
-        """
-        front=words(1,common=False)
-        back=words(1,common=False)
-        #side to side
-        email=front+"@"+back+".com"
-        return email
+	def generate_EmailField(self,**kwargs):
+		"""
+		Generates a random lipsum email address.
+		"""
+		front=words(1,common=False)
+		back=words(1,common=False)
+		#side to side
+		email=front+str(random.randint(1000,9999))+"@"+back+".com"
+		return email
     
     def _decide(self,action,*args,**kwargs):
         """
