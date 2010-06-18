@@ -1,0 +1,74 @@
+Dilla is a command that populates your database with randomized data. You'll need install dilla as an app in the django 
+settings file.
+
+Examples:
+1. Generate data for all models in an app
+   >>python manage.py dilla app_name
+
+2. Generate data for all models in all apps listed
+   >>python manage.py dilla app_name app_name
+
+3. Generate data for all models in all apps listed (an alternative to #2)
+   >>python manage.py dilla -a app_name -a app_name
+
+4. Generate data for supplied models, in the supplied apps
+   >>python manage.py dilla -a app_name -m ModelName
+
+5. Addition to #4, generate data for multiple models
+   >>python manage.py dilla -a app_name -m ModelName -m AnotherModelName
+
+** The order of app names and model names are important, if a model has
+   a ForeignKey to another model, but there isn't data available yet
+   in the foregn table, problems occur.
+
+** When using -a or -m, you don't need to use full python path.
+
+You configure your models with some information for dilla. Here's some examples:
+
+--models.py:--
+
+class DillaController():
+  #(Optional) this defines the order of how models are populated. (Fixes cross ForeignKey problems)
+  models=('UserProfile','Venue','Event','Genre','Artist')
+
+class Event(models.Model):
+  venue=models.ForeignKey('Venue')
+  artists=models.ManyToManyField('Artist')
+  date=models.DateTimeField(blank=False,null=False)
+  showtime=models.TimeField(blank=False,null=False)
+  doortime=models.TimeField(blank=False,null=False)
+  covercharge=models.DecimalField(decimal_places=2,max_digits=7)
+  created_at=antaresia_models.ModelCommons.created_at()
+  updated_on=antaresia_models.ModelCommons.updated_on()
+  #usual Dilla meta class
+  class Dilla():
+    skip_model=False
+    generate_images=False
+    image_fields=None
+    resolution="1024x768" #if images, this resolution
+    resolutions=('300x340','200x190','100x10','200x90') #if images, use a random resolution from this tuple
+    field_extras={ #field extras are for defining custom dilla behavior per field
+      'fieldname':{
+        'generator':None, #can point to a callable, which must return the desired value. If this is a string, it looks 
+        for a method in the dilla.py file.
+        'generator_wants_extras':False, #whether or not to pass this "field extra" hash item to the callable
+        'random_values':("word","yes","no","1"), #choose a random value from this tuple
+        'resolution':'1024x768', #if images, use this image size for this field
+        'resolutions':('300x340','200x190','100x10','200x90'), #if images, use a random size from this tuple
+        'max':10, #for many to many fields, the maximum associated objects will be 10, so it will take a range like: 
+        Model.objects.all().order_by("?")[0:random.randrange(0,max)]
+        'spaces':False, #if Char/TextField, whether or not to allow spaces
+        'word_count':1, #if Char/TextField, the number of words to generate
+        'word_range':(3,7), #a range of words to generate (3-7 words)
+        'paragraph_count:1, #if TextField, the number of paragraphs to generate
+        'paragraph_range':(3,5), #a range of paragraphs to generate (3 - 5 paragraphs)
+        'integer_range':(0,2), #a range for any integer type field 
+        (IntegerField,SmallIntegerField,PositiveInteger,PositiveSmallInteger)
+        #TODO:'digits_only':True, #if Char/TextField, but want numbers only
+        #TODO:'digit_range:(30,400), #a range for digit only creation (default range is (0,9999))
+        #TODO:'digit_ranges':((0,20),(30,300)), #chooses random range from this tuple.
+        #TODO:'digits_for_words':False|True (Default:False) #generates lipsum words, but then replaces each word with 
+        numbers. (like a sentance of numbers)
+      },
+      'anotherfieldname':{...}
+    }
