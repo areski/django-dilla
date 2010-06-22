@@ -7,11 +7,12 @@ from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 from django.db.models import get_app,get_models,URLField
 from django.conf import settings
+from django.db import connection
 
-#authors:
-#adam rutkowski <adam@mtod.org>
-#aaron smith <aaron@macendeavor.com>
-#areski belaid <arski@gmail.com>
+#Authors:
+#Adam rutkowski <adam@mtod.org>
+#Aaron smith <aaron@macendeavor.com>
+#Areski belaid <areski@gmail.com>
 
 """
 EXAMPLE
@@ -168,6 +169,8 @@ class Command(BaseCommand):
                     instance=None
                     continue
                 instances_by_model[model].append(instance)
+            print "SQL Debug :\n-----------------"
+            print connection.queries
         for model in models: #go back through each model, and alter each instance's many to many fields
             if len(model._meta.many_to_many) <= 0: continue
             instances_list=instances_by_model[model]
