@@ -4,15 +4,15 @@ from django.core.exceptions import ValidationError
 from optparse import make_option
 from django.contrib.webdesign.lorem_ipsum import words,paragraphs
 from django.core.management.base import BaseCommand
-from django.db import IntegrityError
 from django.db.models import get_app,get_models,URLField
 from django.conf import settings
+import MySQLdb
 from django.db import connection
 
 #Authors:
-#Adam rutkowski <adam@mtod.org>
-#Aaron smith <aaron@macendeavor.com>
-#Areski belaid <areski@gmail.com>
+#Adam Rutkowski <adam@mtod.org>
+#Aaron Smith <aaron@rubyamf.org>
+#Areski Belaid <areski@gmail.com>
 
 """
 EXAMPLE
@@ -83,7 +83,7 @@ Type 'yes' to confirm.
 
 class Command(BaseCommand):
     """
-    Dilla is a command that populates your database with randomized data. (http://gitweb.codeendeavor.com/?p=dilla.git;a=summary)
+    Dilla is a command that populates your database with randomized data. (http://code.google.com/p/django-dilla)
 
     Examples:
     1. Generate data for all models in an app
@@ -162,10 +162,11 @@ class Command(BaseCommand):
                             self.fill(field=field,obj=instance,dilla=dilla)
                         elif field.blank:
                             self._decide(self.fill,field=field,obj=instance,dilla=dilla)
+                
                 try:
                     instance.save()
                     #if field has unique, this error will be thrown, in the case of dilla, we don't care
-                except IntegrityError:
+                except MySQLdb.IntegrityError:
                     instance=None
                     continue
                 instances_by_model[model].append(instance)
@@ -407,31 +408,31 @@ class Command(BaseCommand):
         today=datetime.datetime.now()
         return datetime.time(today.hour,today.minute,today.second)
     
-	def generate_DateTimeField(self,**kwargs):
-		"""
-		Generates datetime for DateTimeField's
-		Supported field extras:
-		field_extras={
-			'myfield':{
-				'day_delta': 5, #The day delta to generate the date, minus today
-				'hour_delta': 24, #The day delta to generate the date, minus the current hour
-			}
-		}
-		"""
-		field_extras=kwargs.get("field_extras",False)
-		day_delta_setting = self._get_field_option(field_extras,'day_delta', 0)
-		hour_delta_setting = self._get_field_option(field_extras,'hour_delta', 0)
-		
-		#return datetime.datetime.now()
-		day_delta = random.randint(0, day_delta_setting)
-		hour_delta = random.randint(1, hour_delta_setting)
-		
-		today = datetime.datetime.today()
-		one_day = datetime.timedelta(days=1)
-		one_hour = datetime.timedelta(hours=1)
-		pastdate = today - hour_delta * one_hour - day_delta * one_day
-        		
-		return pastdate
+    def generate_DateTimeField(self,**kwargs):
+        """
+        Generates datetime for DateTimeField's
+        Supported field extras:
+        field_extras={
+            'myfield':{
+                'day_delta': 5, #The day delta to generate the date, minus today
+                'hour_delta': 24, #The day delta to generate the date, minus the current hour
+            }
+        }
+        """
+        field_extras=kwargs.get("field_extras",False)
+        day_delta_setting = self._get_field_option(field_extras,'day_delta', 0)
+        hour_delta_setting = self._get_field_option(field_extras,'hour_delta', 0)
+        
+        #return datetime.datetime.now()
+        day_delta = random.randint(0, day_delta_setting)
+        hour_delta = random.randint(1, hour_delta_setting)
+        
+        today = datetime.datetime.today()
+        one_day = datetime.timedelta(days=1)
+        one_hour = datetime.timedelta(hours=1)
+        pastdate = today - hour_delta * one_hour - day_delta * one_day
+                
+        return pastdate
     
     def generate_DateField(self,**kwargs):
         """
@@ -467,15 +468,15 @@ class Command(BaseCommand):
         """
         return bool(random.randint(0,1))
     
-	def generate_EmailField(self,**kwargs):
-		"""
-		Generates a random lipsum email address.
-		"""
-		front=words(1,common=False)
-		back=words(1,common=False)
-		#side to side
-		email=front+str(random.randint(1000,9999))+"@"+back+".com"
-		return email
+    def generate_EmailField(self,**kwargs):
+        """
+        Generates a random lipsum email address.
+        """
+        front=words(1,common=False)
+        back=words(1,common=False)
+        #side to side
+        email=front+str(random.randint(1000,9999))+"@"+back+".com"
+        return email
     
     def _decide(self,action,*args,**kwargs):
         """
@@ -500,8 +501,10 @@ class Command(BaseCommand):
             fontfile=random.choice(fonts)
             font=ImageFont.truetype("%s/fonts/%s" %(ROOT,fontfile), size[0],encoding=TTF_ENCODING)
             draw.text(text_pos, text[i],fill=_gen_rgb(),font=font)
+            del font
         filename="%s.png" % self.generate_SlugField(unique=True)
         im.save("%s%s"%(FAKE_UPLOAD_PATH,filename),'PNG')
+        del draw,im
         return filename
     
     def fill(self,field,obj,dilla=None):
