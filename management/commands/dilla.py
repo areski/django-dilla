@@ -451,7 +451,7 @@ class Command(BaseCommand):
         
         #return datetime.datetime.now()
         day_delta = random.randint(0, day_delta_setting)
-        hour_delta = random.randint(1, hour_delta_setting)
+        hour_delta = random.randint(0, hour_delta_setting)
         
         today = datetime.datetime.today()
         one_day = datetime.timedelta(days=1)
