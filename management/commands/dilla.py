@@ -227,6 +227,32 @@ class Command(BaseCommand):
         int1=random.randint(11111,99999)
         int2=random.randint(1111,9999)
         return str(int1)+"-"+str(int2)
+        
+    def phonenumber(self,**kwargs):
+        """
+        Generates phone number (941-094-382) EX:
+        field_extras={
+            'myfield':{
+                'generator':'phonenumber'
+            }
+        }
+        """
+        int1=random.randint(111,999)
+        int2=random.randint(111,999)
+        int3=random.randint(111,999)
+        return str(int1)+"-"+str(int2)+"-"+str(int3)
+        
+    def sip_URI(self,**kwargs):
+        """
+        Generates phone number (941-094-382) EX:
+        field_extras={
+            'myfield':{
+                'generator':'phonenumber'
+            }
+        }
+        """
+        int1=random.randint(11111111,999999999)
+        return "SIP/"+str(int1)+"@siptrunk"
 
     def zip(self,**kwargs):
         """
